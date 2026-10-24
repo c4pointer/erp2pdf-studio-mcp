@@ -7,6 +7,8 @@ the tool hands back to the model.
 from __future__ import annotations
 
 import json
+import os
+import stat
 from pathlib import Path
 
 import httpx
@@ -437,3 +439,24 @@ async def test_server_tool_error_is_reported(rec):
     with pytest.raises(ToolError) as ei:
         await server.call_tool("get_template", {"template_id": 7})
     assert "template_not_found" in str(ei.value)
+
+
+async def test_default_output_dir_is_private_and_writes_replace_symlinks(tmp_path, monkeypatch):
+    """No ERP2PDF_OUTPUT_DIR: previews go to the user cache folder (0700),
+    and a symlink planted at the file name is replaced, not written through."""
+    if os.name == "nt":
+        pytest.skip("POSIX permissions")
+    from erp2pdf_studio import tools as tools_mod
+
+    monkeypatch.delenv("ERP2PDF_OUTPUT_DIR", raising=False)
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+    d = tools_mod._output_dir()
+    assert d == tmp_path / "cache" / "erp2pdf-studio-mcp"
+    assert stat.S_IMODE(os.stat(d).st_mode) == 0o700
+    victim = tmp_path / "victim.txt"
+    victim.write_text("keep")
+    (d / "out.pdf").symlink_to(victim)
+    tools_mod._write_file(d / "out.pdf", b"%PDF")
+    assert victim.read_text() == "keep"
+    assert not (d / "out.pdf").is_symlink()
+    assert (d / "out.pdf").read_bytes() == b"%PDF"

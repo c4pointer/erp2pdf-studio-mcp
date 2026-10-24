@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public release.
 
+### Security
+
+- `render_preview` saves files in the user cache folder (`~/.cache/erp2pdf-studio-mcp`, mode 0700) instead of the shared temp directory, and writes through a private temp file renamed into place, so a symlink planted at the file name is replaced, not written through.
+
 ### Added
 
 - Translation tools for PDF and email templates:

@@ -9,9 +9,11 @@ model can fix the exact slot.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
+import stat
 import tempfile
 from pathlib import Path
 from typing import Any, Literal
@@ -44,10 +46,42 @@ def _fail(e: StudioAPIError) -> ToolFailure:
     return ToolFailure(_dump(out))
 
 
+def _default_output_dir() -> Path:
+    """A folder only this user can reach: the user cache directory, not
+    the shared temp directory, where another local user could plant a
+    symlink under the name we write to."""
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    else:
+        base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+    return Path(base) / "erp2pdf-studio-mcp"
+
+
 def _output_dir() -> Path:
-    d = Path(os.environ.get("ERP2PDF_OUTPUT_DIR") or Path(tempfile.gettempdir()) / "erp2pdf")
-    d.mkdir(parents=True, exist_ok=True)
+    chosen = os.environ.get("ERP2PDF_OUTPUT_DIR")
+    d = Path(chosen) if chosen else _default_output_dir()
+    d.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if not chosen and os.name != "nt":
+        # The default folder must be ours and a real directory.
+        st = os.lstat(d)
+        if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid():
+            raise RuntimeError(f"{d} is not a directory owned by this user; set ERP2PDF_OUTPUT_DIR")
     return d
+
+
+def _write_file(path: Path, data: bytes) -> None:
+    """Write through a fresh private temp file in the same folder, then
+    rename it into place: a rename replaces whatever is at ``path`` (a
+    symlink included) instead of writing through it."""
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".erp2pdf-", suffix=path.suffix)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp)
+        raise
 
 
 def _safe_name(name: str) -> str:
@@ -217,7 +251,7 @@ class StudioTools:
             return _dump(meta)
         ext = ".png" if output == "png" else ".pdf"
         path = _output_dir() / _safe_name(f"{stem}{ext}")
-        path.write_bytes(res.content)
+        _write_file(path, res.content)
         meta["path"] = str(path)
         return _dump(meta)
 

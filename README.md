@@ -164,7 +164,7 @@ command `uvx`, the arguments above, and the environment variables below.
 |---|---|---|---|
 | `ERP2PDF_API_KEY` | yes | - | API token from the erp2pdf.com cabinet, issued with "Allow Template API". |
 | `ERP2PDF_BASE_URL` | no | `https://erp2pdf.com` | Base URL of the erp2pdf.com deployment to talk to. |
-| `ERP2PDF_OUTPUT_DIR` | no | `<system temp dir>/erp2pdf` | Where `render_preview` saves PDF and PNG previews. Created if missing. |
+| `ERP2PDF_OUTPUT_DIR` | no | `~/.cache/erp2pdf-studio-mcp` (`%LOCALAPPDATA%\erp2pdf-studio-mcp` on Windows) | Where `render_preview` saves PDF and PNG previews. Created if missing, readable only by you. |
 
 ## Tools
 
