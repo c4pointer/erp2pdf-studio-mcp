@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/c4pointer/erp2pdf-studio-mcp/blob/main/SECURITY.md
+    about: Report security issues privately by email to hello@erp2pdf.com. Never post tokens in an issue.
+  - name: Account, plan or token questions
+    url: https://erp2pdf.com
+    about: Questions about your erp2pdf.com account, plan or API tokens go to hello@erp2pdf.com.
+  - name: Template API documentation
+    url: https://erp2pdf.com/api-docs#template-api
+    about: The layout format, expressions, error codes and rate limits.

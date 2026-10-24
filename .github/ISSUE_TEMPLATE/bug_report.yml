@@ -1,0 +1,69 @@
+name: Bug report
+description: Something in erp2pdf-studio-mcp does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Never paste an API token** (or a full
+        `Authorization` header) in this form: redact it as `<redacted>`.
+        Security issues go to hello@erp2pdf.com, not here.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The prompt or the tool calls (with arguments) that trigger the problem.
+      placeholder: |
+        1. Ask the agent to ...
+        2. It calls `render_preview` with ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Tool output or error
+      description: The tool error JSON (`status`, `code`, `message`, `errors`) or the server's stderr. Redact tokens and customer data.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: erp2pdf-studio-mcp version or commit
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12"
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client and version
+      placeholder: "Claude Desktop 1.x, Claude Code 2.x, Cursor 1.x, ..."
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15, Ubuntu 24.04, Windows 11, ..."
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I removed every API token and private data from this report.
+          required: true
+        - label: The token was issued with "Allow Template API" and is not the Odoo connector's token.
+          required: false
