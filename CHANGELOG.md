@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-24
+
+### Fixed
+
+- Docs: the default output folder in the server docstring, and the cabinet button for an agent token ("New agent token").
+
 ## [0.2.0] - 2026-10-24
 
 First public release.
@@ -77,5 +83,6 @@ Initial version (not published).
 - Tests that mock the HTTP layer with `httpx.MockTransport`.
 
 [Unreleased]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.2.0...HEAD
+[0.2.1]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.2.1
 [0.2.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/commits/v0.2.0

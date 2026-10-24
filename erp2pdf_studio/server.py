@@ -7,7 +7,8 @@ Configuration (environment):
   revoked without touching the Odoo connector.
 * ``ERP2PDF_BASE_URL``  — default ``https://erp2pdf.com``.
 * ``ERP2PDF_OUTPUT_DIR`` — where rendered PDFs/PNGs are saved (default:
-  ``<tmp>/erp2pdf``).
+  ``~/.cache/erp2pdf-studio-mcp``, or ``%LOCALAPPDATA%\\erp2pdf-studio-mcp``
+  on Windows; created with mode 0700).
 
 Run: ``erp2pdf-studio-mcp`` or ``python -m erp2pdf_studio``.
 """

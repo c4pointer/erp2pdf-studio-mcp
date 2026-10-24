@@ -47,7 +47,7 @@ a compact, agent-friendly summary is at
 ## Get an API token
 
 1. Sign in at [erp2pdf.com](https://erp2pdf.com) and open the cabinet:
-   **API tokens** (`https://erp2pdf.com/cabinet-tokens`) -> **New token**.
+   **API tokens** (`https://erp2pdf.com/cabinet-tokens`) -> **New agent token**.
 2. Name it after the agent (for example "Claude") and tick
    **Allow Template API (AI agents, MCP)**. Only tokens issued with that box
    ticked can call the Template API.
