@@ -188,9 +188,13 @@ async def test_render_preview_draft_png_and_html(tools, rec, tmp_path, monkeypat
     monkeypatch.setenv("ERP2PDF_OUTPUT_DIR", str(tmp_path))
     rec.add("POST", "/api/v1/studio/render", httpx.Response(
         200, content=b"\x89PNG", headers={"content-type": "image/png"}))
-    out = json.loads(await tools.render_preview(layout={"slots": []}, output="png"))
+    meta, image = await tools.render_preview(layout={"slots": []}, output="png")
+    out = json.loads(meta)
     assert out["path"].endswith("draft.png")
+    assert image.data == b"\x89PNG"
     assert rec.last_json()["output"] == "png"
+    out = json.loads(await tools.render_preview(layout={"slots": []}, output="png", show=False))
+    assert out["path"].endswith("draft.png")
     rec.add("POST", "/api/v1/studio/render", httpx.Response(
         200, content=b"<html>ok</html>", headers={"content-type": "text/html"}))
     out = json.loads(await tools.render_preview(layout={"slots": []}, output="html"))
@@ -216,10 +220,51 @@ async def test_starters_and_parts(tools, rec):
     await tools.create_from_starter("quotation", "Q", date_format="01/02/2006")
     assert rec.last_json() == {"starter": "quotation", "name": "Q",
                                "date_format": "01/02/2006", "header": True, "footer": True}
+    await tools.create_from_starter("invoice", "I", style="folder")
+    assert rec.last_json()["style"] == "folder"
     await tools.update_part(2, name="New")
     assert rec.last_json() == {"name": "New"}
     await tools.delete_part(2, force=True)
     assert rec.last.url.params["force"] == "true"
+
+
+async def test_capabilities(tools, rec):
+    rec.add("GET", "/api/v1/studio/capabilities", httpx.Response(200, json={
+        "kinds": {"path": {}}, "path_recipes": [{"name": "wave"}]}))
+    out = json.loads(await tools.get_capabilities())
+    assert out["path_recipes"][0]["name"] == "wave"
+
+
+async def test_import_svg_sends_raw_markup(tools, rec, tmp_path):
+    rec.add("POST", "/api/v1/studio/svg/convert", httpx.Response(200, json={
+        "viewBox": [0, 0, 10, 10], "paths": [{"d": "M0 0 H10"}], "warnings": []}))
+    svg = '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0 H10"/></svg>'
+    out = json.loads(await tools.import_svg(svg=svg, w=120))
+    assert out["paths"][0]["d"] == "M0 0 H10"
+    assert rec.last.content == svg.encode()
+    assert rec.last.headers["content-type"] == "image/svg+xml"
+    assert rec.last.url.params["w"] == "120" and "h" not in rec.last.url.params
+    f = tmp_path / "logo.svg"
+    f.write_text(svg)
+    await tools.import_svg(path=str(f))
+    assert rec.last.content == svg.encode()
+
+
+@pytest.mark.parametrize("kw", [{}, {"svg": "<svg/>", "path": "x.svg"}])
+async def test_import_svg_needs_one_source(tools, rec, kw):
+    with pytest.raises(ToolFailure):
+        await tools.import_svg(**kw)
+    assert rec.requests == []
+
+
+async def test_import_svg_refuses_big_or_missing_files(tools, rec, tmp_path):
+    big = tmp_path / "big.svg"
+    big.write_bytes(b"<svg>" + b" " * 1_000_001)
+    with pytest.raises(ToolFailure, match="1 MB"):
+        await tools.import_svg(path=str(big))
+    with pytest.raises(ToolFailure, match="cannot read"):
+        await tools.import_svg(path=str(tmp_path / "missing.svg"))
+    assert rec.requests == []
 
 
 async def test_network_error(rec):
@@ -426,6 +471,19 @@ async def test_server_call_tool_roundtrip(rec):
     result = await server.call_tool("get_template", {"template_id": 7})
     text = result.content[0].text
     assert json.loads(text) == {"id": 7}
+
+
+async def test_server_returns_the_png_preview_as_an_image(rec, tmp_path, monkeypatch):
+    from erp2pdf_studio.server import build_server
+
+    monkeypatch.setenv("ERP2PDF_OUTPUT_DIR", str(tmp_path))
+    rec.add("POST", "/api/v1/studio/templates/7/render", httpx.Response(
+        200, content=b"\x89PNG\r\n", headers={"content-type": "image/png"}))
+    server = build_server(StudioClient(KEY, "https://x", transport=httpx.MockTransport(rec)))
+    result = await server.call_tool("render_preview", {"template_id": 7, "output": "png"})
+    kinds = [c.type for c in result.content]
+    assert kinds == ["text", "image"]
+    assert result.content[1].mime_type == "image/png"
 
 
 async def test_server_tool_error_is_reported(rec):

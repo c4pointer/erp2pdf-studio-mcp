@@ -2,7 +2,8 @@
 
 Plain async methods (no MCP SDK import here) so they can be unit-tested
 with a mocked HTTP transport; ``server.py`` registers them on the MCP
-server. Every tool returns a JSON string; API failures become
+server. Every tool returns a JSON string (``render_preview`` with
+``show=True`` also a :class:`PngImage`); API failures become
 :class:`ToolFailure` with the API's error code, message and — for an
 invalid layout — the list of ``{path, code, message}`` errors, so the
 model can fix the exact slot.
@@ -24,12 +25,26 @@ from .client import StudioAPIError, StudioClient
 # context (a long multi-page document is mostly repeated markup).
 MAX_INLINE_HTML = 200_000
 
+# import_svg reads at most this much from a local file (the API's limit).
+MAX_SVG_BYTES = 1_000_000
+
+# Starter styles (GET /starters lists which ones each starter comes in).
+StarterStyle = Literal["classic", "folder", "wave", "diagonal", "sidebar", "bigtotal"]
+
 # The Odoo models an email template can be written for.
 EmailModel = Literal["sale.order", "account.move", "purchase.order", "res.partner"]
 
 
 class ToolFailure(Exception):
     """Raised by a tool; ``server.py`` maps it to an MCP tool error."""
+
+
+class PngImage:
+    """A PNG a tool hands back to the model; ``server.py`` turns it into
+    MCP image content."""
+
+    def __init__(self, data: bytes):
+        self.data = data
 
 
 def _dump(obj: Any) -> str:
@@ -96,6 +111,7 @@ class StudioTools:
         "list_templates", "get_template", "create_template", "update_template",
         "delete_template", "duplicate_template", "validate_layout", "get_values",
         "render_preview", "list_starters", "create_from_starter",
+        "get_capabilities", "import_svg",
         "list_parts", "create_part", "update_part", "delete_part",
         "get_translations", "set_translations",
         "list_email_templates", "get_email_template", "create_email_template",
@@ -217,11 +233,14 @@ class StudioTools:
                              mapping: dict | None = None,
                              output: Literal["pdf", "html", "png"] = "pdf",
                              model: str | None = None, record_id: int | None = None,
-                             language: str | None = None, timezone: str | None = None) -> str:
+                             language: str | None = None, timezone: str | None = None,
+                             show: bool = True) -> str | list:
         """Render a preview (PREVIEW watermark, no credits) of a saved
         template (template_id) or an unsaved layout. output=html returns the
         HTML inline; pdf/png are saved to a local file and the path is
-        returned (png = page 1)."""
+        returned (png = page 1). With output=png and show=true (default) the
+        image itself comes back too: look at it to judge the design
+        (alignment, overlaps, clipped text, contrast) and iterate."""
         try:
             if template_id is not None:
                 res = await self.client.render_template(
@@ -253,23 +272,73 @@ class StudioTools:
         path = _output_dir() / _safe_name(f"{stem}{ext}")
         _write_file(path, res.content)
         meta["path"] = str(path)
+        if output == "png" and show:
+            return [_dump(meta), PngImage(res.content)]
         return _dump(meta)
 
     async def list_starters(self) -> str:
-        """Starting points: blank, quotation, invoice, purchase, product."""
+        """Starting points: blank, quotation, invoice, purchase, product,
+        each with the `styles` it comes in (classic, folder, wave, diagonal,
+        sidebar, bigtotal) and whether a style uses the shared header/footer."""
         return await self._call(self.client.list_starters())
 
     async def create_from_starter(self, starter: Literal["blank", "quotation", "invoice",
                                                          "purchase", "product"],
-                                  name: str, model: str | None = None,
+                                  name: str, style: StarterStyle | None = None,
+                                  model: str | None = None,
                                   date_format: str | None = None, header: bool = True,
                                   footer: bool = True) -> str:
         """Create a template from a starter layout (same as Studio's New
-        template dialog). Document starters reuse the account's shared
-        'Company header'/'Company footer' parts, creating them on first use.
-        `model` is only for the blank starter."""
+        template dialog). `style` picks the look (default classic): folder =
+        light band with a folder tab, wave = dark wave header, diagonal =
+        dark band with a slanted edge, sidebar = coloured column, bigtotal =
+        the amount to pay set large. Every colour is a theme reference, so
+        update_template(layout_set={"theme": {...}}) rebrands it. Classic
+        reuses the shared 'Company header'/'Company footer' parts (created on
+        first use); the bold styles draw their own letterhead. `model` is
+        only for the blank starter."""
         return await self._call(self.client.create_from_starter(
-            starter, name, model=model, date_format=date_format, header=header, footer=footer))
+            starter, name, model=model, date_format=date_format, header=header, footer=footer,
+            style=style))
+
+    # ── design ──────────────────────────────────────────────────────
+
+    async def get_capabilities(self) -> str:
+        """Read this before designing. Everything a layout can hold, from
+        the same rules the validator applies: slot kinds and their keys with
+        types and allowed values (text: letterSpacing, lineHeight,
+        textTransform, valign, bgColor...; image: mask, grayscale; every
+        slot: opacity, shadow, rotation, blendMode), the paint format
+        (hex, theme.<key>, or a linear/radial gradient object), the `path`
+        kind (free vector drawing: viewBox + paths[{d, fill, gradient,
+        stroke, ...}]), page background, theme keys, bundled fonts, page
+        sizes, limits, and ready `path_recipes` (folder tab, wave, diagonal
+        band, chevron, hexagon, blob, corner arc) to copy into a path slot."""
+        return await self._call(self.client.get_capabilities())
+
+    async def import_svg(self, svg: str | None = None, path: str | None = None,
+                         w: float | None = None, h: float | None = None) -> str:
+        """Turn an SVG (a logo, an illustration, a shape drawn elsewhere)
+        into a `path` slot body: returns {viewBox, paths, warnings, box,
+        keepAspect}. Pass the markup as `svg`, or `path` to a local .svg file
+        (max 1 MB). Create the slot as {"kind": "path", "x", "y", "w": box.w,
+        "h": box.h, "viewBox", "keepAspect", "paths"}, or pass w/h for the
+        size you will place it at (stroke widths are in pt for that size).
+        Text, images, filters and masks are dropped and listed in warnings."""
+        if (svg is None) == (path is None):
+            raise ToolFailure("pass exactly one of svg or path")
+        if path is not None:
+            p = Path(path).expanduser()
+            try:
+                with p.open("rb") as f:
+                    data = f.read(MAX_SVG_BYTES + 1)
+            except OSError as e:
+                raise ToolFailure(f"cannot read {p}: {e.strerror or e}") from e
+        else:
+            data = svg.encode("utf-8")
+        if len(data) > MAX_SVG_BYTES:
+            raise ToolFailure("the SVG is larger than 1 MB")
+        return await self._call(self.client.convert_svg(data, w=w, h=h))
 
     # ── parts ───────────────────────────────────────────────────────
 

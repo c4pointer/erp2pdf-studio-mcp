@@ -138,10 +138,12 @@ class StudioClient:
     # ── plumbing ────────────────────────────────────────────────────
 
     async def _request(self, method: str, path: str, *, json: Any = None,
-                       params: dict | None = None) -> httpx.Response:
+                       params: dict | None = None, content: bytes | None = None,
+                       headers: dict | None = None) -> httpx.Response:
         params = {k: v for k, v in (params or {}).items() if v is not None}
         try:
-            r = await self._http.request(method, API_PREFIX + path, json=json, params=params)
+            r = await self._http.request(method, API_PREFIX + path, json=json, params=params,
+                                         content=content, headers=headers)
         except httpx.HTTPError as e:
             raise StudioAPIError(0, "network_error", str(e)) from e
         if r.status_code >= 400:
@@ -237,11 +239,22 @@ class StudioClient:
 
     async def create_from_starter(self, starter: str, name: str, *, model: str | None = None,
                                   date_format: str | None = None, header: bool = True,
-                                  footer: bool = True) -> dict:
+                                  footer: bool = True, style: str | None = None) -> dict:
         return await self._json("POST", "/templates/from-starter", json=_drop_none({
-            "starter": starter, "name": name, "model": model, "date_format": date_format,
-            "header": header, "footer": footer,
+            "starter": starter, "style": style, "name": name, "model": model,
+            "date_format": date_format, "header": header, "footer": footer,
         }))
+
+    # ── design ──────────────────────────────────────────────────────
+
+    async def get_capabilities(self) -> dict:
+        return await self._json("GET", "/capabilities")
+
+    async def convert_svg(self, svg: bytes, *, w: float | None = None,
+                          h: float | None = None) -> dict:
+        r = await self._request("POST", "/svg/convert", params={"w": w, "h": h}, content=svg,
+                                headers={"Content-Type": "image/svg+xml"})
+        return r.json()
 
     # ── parts ───────────────────────────────────────────────────────
 
