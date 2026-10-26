@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "erp2pdf-studio-mcp"
-version = "0.3.0"
+version = "0.4.0"
 description = "MCP server for the erp2pdf.com Template API: build and test PDF templates from an AI agent."
 readme = "README.md"
 requires-python = ">=3.10"

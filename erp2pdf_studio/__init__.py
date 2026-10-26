@@ -1,3 +1,3 @@
 """MCP server for the erp2pdf.com Template API."""
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
