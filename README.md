@@ -79,7 +79,7 @@ erp2pdf-studio-mcp          # or: python -m erp2pdf_studio
 ```
 
 To pin a release, append its tag to the URL, for example
-`git+https://github.com/c4pointer/erp2pdf-studio-mcp@v0.3.0`.
+`git+https://github.com/c4pointer/erp2pdf-studio-mcp@v0.4.0`.
 
 Dependencies: [`mcp`](https://pypi.org/project/mcp/) 2.3.0 (the official MCP
 Python SDK) and [`httpx`](https://www.python-httpx.org/).
@@ -196,7 +196,8 @@ Previews carry a PREVIEW watermark and cost no credits.
 | `get_values` | What every `{{ }}` expression prints for one record, per slot and per table row. |
 | `render_preview` | Render a watermarked preview as PDF or PNG (saved to `ERP2PDF_OUTPUT_DIR`) or HTML (returned inline). A PNG also comes back as an image the agent can look at. |
 | `list_starters` | List the starter layouts (blank, quotation, invoice, purchase, product) and the styles each comes in. |
-| `create_from_starter` | Create a template from a starter in a style: classic (shared header and footer), folder, wave, diagonal, sidebar or bigtotal. |
+| `create_from_starter` | Create a template from a starter in a style (classic, folder, wave, diagonal, sidebar, bigtotal, light, boxed, striped, bubble, elegant) and a palette/font preset. |
+| `preview_starter` | Look at a starter style in a palette and font pairing before creating anything (an image of page 1 on sample data). |
 
 **Design**
 

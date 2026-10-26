@@ -239,13 +239,21 @@ class StudioClient:
 
     async def create_from_starter(self, starter: str, name: str, *, model: str | None = None,
                                   date_format: str | None = None, header: bool = True,
-                                  footer: bool = True, style: str | None = None) -> dict:
+                                  footer: bool = True, style: str | None = None,
+                                  theme: str | dict | None = None) -> dict:
         return await self._json("POST", "/templates/from-starter", json=_drop_none({
-            "starter": starter, "style": style, "name": name, "model": model,
+            "starter": starter, "style": style, "theme": theme, "name": name, "model": model,
             "date_format": date_format, "header": header, "footer": footer,
         }))
 
     # ── design ──────────────────────────────────────────────────────
+
+    async def starter_preview(self, starter: str, style: str, *, palette: str | None = None,
+                              font: str | None = None, w: int | None = None) -> BinaryResult:
+        r = await self._request("GET", f"/starters/{_segment(starter)}/{_segment(style)}"
+                                       "/preview.png",
+                                params={"palette": palette, "font": font, "w": w})
+        return _binary(r)
 
     async def get_capabilities(self) -> dict:
         return await self._json("GET", "/capabilities")
@@ -348,6 +356,18 @@ class StudioClient:
     async def get_sample(self, model: str, record_id: int | None = None) -> dict:
         return await self._json("GET", _model_path(model, "/sample"),
                                 params={"record_id": record_id})
+
+
+_SEGMENT_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
+
+
+def _segment(value: str) -> str:
+    """A starter or style key as one URL path segment (they are short
+    lowercase identifiers); anything else never reaches HTTP."""
+    if not isinstance(value, str) or not _SEGMENT_RE.match(value):
+        raise InvalidArgument(
+            f"starter and style are keys such as invoice or folder, got {value!r}")
+    return value
 
 
 def _drop_none(d: dict) -> dict:

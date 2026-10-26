@@ -228,6 +228,26 @@ async def test_starters_and_parts(tools, rec):
     assert rec.last.url.params["force"] == "true"
 
 
+async def test_starter_theme_and_preview(tools, rec, tmp_path, monkeypatch):
+    monkeypatch.setenv("ERP2PDF_OUTPUT_DIR", str(tmp_path))
+    rec.add("POST", "/api/v1/studio/templates/from-starter", httpx.Response(201, json={"id": 5}))
+    await tools.create_from_starter("invoice", "I", style="wave", theme={"palette": "ocean"})
+    assert rec.last_json()["theme"] == {"palette": "ocean"}
+    rec.add("GET", "/api/v1/studio/starters/invoice/wave/preview.png", httpx.Response(
+        200, content=b"\x89PNG", headers={"content-type": "image/png"}))
+    meta, image = await tools.preview_starter("invoice", "wave", palette="ocean", width=240)
+    assert image.data == b"\x89PNG" and json.loads(meta)["placeholder"] is False
+    assert rec.last.url.params["palette"] == "ocean" and rec.last.url.params["w"] == "240"
+    assert "font" not in rec.last.url.params
+
+
+@pytest.mark.parametrize("bad", ["../x", "Invoice", "a/b", ""])
+async def test_bad_starter_keys_never_reach_http(tools, rec, bad):
+    with pytest.raises(ToolFailure):
+        await tools.preview_starter(bad)
+    assert rec.requests == []
+
+
 async def test_capabilities(tools, rec):
     rec.add("GET", "/api/v1/studio/capabilities", httpx.Response(200, json={
         "kinds": {"path": {}}, "path_recipes": [{"name": "wave"}]}))

@@ -31,7 +31,8 @@ MAX_SVG_BYTES = 1_000_000
 SVG_SNIFF_BYTES = 8192
 
 # Starter styles (GET /starters lists which ones each starter comes in).
-StarterStyle = Literal["classic", "folder", "wave", "diagonal", "sidebar", "bigtotal"]
+StarterStyle = Literal["classic", "folder", "wave", "diagonal", "sidebar", "bigtotal",
+                       "light", "boxed", "striped", "bubble", "elegant"]
 
 # The Odoo models an email template can be written for.
 EmailModel = Literal["sale.order", "account.move", "purchase.order", "res.partner"]
@@ -134,7 +135,7 @@ class StudioTools:
         "list_templates", "get_template", "create_template", "update_template",
         "delete_template", "duplicate_template", "validate_layout", "get_values",
         "render_preview", "list_starters", "create_from_starter",
-        "get_capabilities", "import_svg",
+        "get_capabilities", "import_svg", "preview_starter",
         "list_parts", "create_part", "update_part", "delete_part",
         "get_translations", "set_translations",
         "list_email_templates", "get_email_template", "create_email_template",
@@ -308,6 +309,7 @@ class StudioTools:
     async def create_from_starter(self, starter: Literal["blank", "quotation", "invoice",
                                                          "purchase", "product"],
                                   name: str, style: StarterStyle | None = None,
+                                  theme: str | dict | None = None,
                                   model: str | None = None,
                                   date_format: str | None = None, header: bool = True,
                                   footer: bool = True) -> str:
@@ -316,13 +318,38 @@ class StudioTools:
         light band with a folder tab, wave = dark wave header, diagonal =
         dark band with a slanted edge, sidebar = coloured column, bigtotal =
         the amount to pay set large. Every colour is a theme reference, so
-        update_template(layout_set={"theme": {...}}) rebrands it. Classic
+        update_template(layout_set={"theme": {...}}) rebrands it. `theme`
+        picks a palette and fonts at creation: a palette key ("ocean"), or
+        {"palette": "ocean", "fonts": "editorial", <theme keys>} (list_starters
+        lists presets.palettes and presets.fonts). Classic
         reuses the shared 'Company header'/'Company footer' parts (created on
         first use); the bold styles draw their own letterhead. `model` is
         only for the blank starter."""
         return await self._call(self.client.create_from_starter(
             starter, name, model=model, date_format=date_format, header=header, footer=footer,
-            style=style))
+            style=style, theme=theme))
+
+    async def preview_starter(self, starter: Literal["blank", "quotation", "invoice",
+                                                     "purchase", "product"],
+                              style: StarterStyle = "classic", palette: str | None = None,
+                              font: str | None = None, width: int = 480) -> list:
+        """Look at a starter style before creating anything: page 1 on a
+        fixed sample document, re-skinned by a palette and a font pairing
+        (preset keys from list_starters), as an image. Width 240-960 px.
+        Use it to compare styles and palettes with the user, then
+        create_from_starter(starter, name, style=..., theme=palette)."""
+        try:
+            res = await self.client.starter_preview(starter, style, palette=palette, font=font,
+                                                    w=width)
+        except StudioAPIError as e:
+            raise _fail(e) from e
+        if res.content_type.split(";")[0].strip() != "image/png":
+            raise ToolFailure("the preview is not ready yet; try again in a few seconds")
+        path = _output_dir() / _safe_name(f"starter-{starter}-{style}-{palette or 'own'}.png")
+        _write_file(path, res.content)
+        warming = res.headers.get("retry-after") is not None
+        meta = {"path": str(path), "bytes": len(res.content), "placeholder": warming}
+        return [_dump(meta), PngImage(res.content)]
 
     # ── design ──────────────────────────────────────────────────────
 

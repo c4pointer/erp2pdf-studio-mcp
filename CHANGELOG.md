@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-26
+
+### Added
+
+- `preview_starter(starter, style, palette?, font?, width?)`: page 1 of a starter style on sample data, re-skinned by a palette and a font pairing, returned as an image.
+- `create_from_starter(theme=...)`: a palette key, or `{palette, fonts, <theme keys>}`; the new styles light, boxed, striped, bubble and elegant.
+
 ## [0.3.0] - 2026-10-26
 
 ### Added
@@ -99,7 +106,8 @@ Initial version (not published).
   `message` and, for an invalid layout, the `{path, code, message}` list.
 - Tests that mock the HTTP layer with `httpx.MockTransport`.
 
-[Unreleased]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.4.0
 [0.3.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.3.0
 [0.2.1]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.2.1
 [0.2.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.2.0
