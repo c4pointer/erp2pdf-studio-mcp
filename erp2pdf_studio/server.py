@@ -17,12 +17,12 @@ from __future__ import annotations
 import functools
 import sys
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from . import __version__
 from .client import StudioClient
-from .tools import StudioTools, ToolFailure
+from .tools import PngImage, StudioTools, ToolFailure
 
 INSTRUCTIONS = """\
 Build and test PDF templates on erp2pdf.com (Studio templates bound to Odoo
@@ -41,6 +41,14 @@ string per language -> set_translations({lang: {source: text}}), keeping each
 string's {{ expressions }}; fill_from_glossary covers common terms. Check with
 render_preview / preview_email and language="de_DE". Email templates:
 create_email_template / update_email_template / preview_email.
+Design: get_capabilities first (kinds, keys, gradients, fonts, path_recipes).
+Anything can be drawn: `path` slots hold SVG path data (viewBox + paths with
+fill/gradient/stroke), shapes and text take gradients, opacity, shadow and
+rotation, layout.background paints every page, layout.theme holds the brand
+colours (refer to them as "theme.primary"). Start bold from
+create_from_starter(style="folder"|"wave"|"diagonal"|"sidebar"|"bigtotal");
+import_svg turns a logo or illustration into a path slot. Look at
+render_preview(output="png") after each change and fix what you see.
 Full spec: https://erp2pdf.com/api-docs#template-api and https://erp2pdf.com/llms.txt.
 """
 
@@ -51,9 +59,13 @@ def _wrap(fn):
     @functools.wraps(fn)
     async def wrapper(*args, **kwargs):
         try:
-            return await fn(*args, **kwargs)
+            out = await fn(*args, **kwargs)
         except ToolFailure as e:
             raise ToolError(str(e)) from e
+        if isinstance(out, list):
+            return [Image(data=x.data, format="png") if isinstance(x, PngImage) else x
+                    for x in out]
+        return out
     return wrapper
 
 

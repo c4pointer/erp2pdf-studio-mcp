@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-26
+
+### Added
+
+- `get_capabilities`: everything a layout can hold (kinds, keys and allowed values, gradients, free vector `path` slots, page background, theme, bundled fonts, limits) and ready path recipes.
+- `import_svg(svg=... | path=..., w?, h?)`: converts an SVG into the body of a `path` slot; reads local files up to 1 MB.
+- `create_from_starter(style=...)`: the bold starter styles folder, wave, diagonal, sidebar and bigtotal.
+- `render_preview(output="png")` also returns the page as an image, so the agent can look at its design; `show=false` returns only the path.
+
+### Changed
+
+- The server instructions describe the design workflow: capabilities, starter styles, theme, path slots, preview and iterate.
+
 ## [0.2.1] - 2026-10-24
 
 ### Fixed
@@ -82,7 +95,8 @@ Initial version (not published).
   `message` and, for an invalid layout, the `{path, code, message}` list.
 - Tests that mock the HTTP layer with `httpx.MockTransport`.
 
-[Unreleased]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.3.0
 [0.2.1]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.2.1
 [0.2.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/commits/v0.2.0

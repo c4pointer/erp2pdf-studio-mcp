@@ -79,7 +79,7 @@ erp2pdf-studio-mcp          # or: python -m erp2pdf_studio
 ```
 
 To pin a release, append its tag to the URL, for example
-`git+https://github.com/c4pointer/erp2pdf-studio-mcp@v0.2.0`.
+`git+https://github.com/c4pointer/erp2pdf-studio-mcp@v0.3.0`.
 
 Dependencies: [`mcp`](https://pypi.org/project/mcp/) 2.3.0 (the official MCP
 Python SDK) and [`httpx`](https://www.python-httpx.org/).
@@ -194,9 +194,16 @@ Previews carry a PREVIEW watermark and cost no credits.
 | `duplicate_template` | Copy a template. |
 | `validate_layout` | Validate a layout without saving, optionally evaluating every expression against a record. |
 | `get_values` | What every `{{ }}` expression prints for one record, per slot and per table row. |
-| `render_preview` | Render a watermarked preview as PDF or PNG (saved to `ERP2PDF_OUTPUT_DIR`) or HTML (returned inline). |
-| `list_starters` | List the starter layouts: blank, quotation, invoice, purchase, product. |
-| `create_from_starter` | Create a template from a starter, with the account's shared header and footer. |
+| `render_preview` | Render a watermarked preview as PDF or PNG (saved to `ERP2PDF_OUTPUT_DIR`) or HTML (returned inline). A PNG also comes back as an image the agent can look at. |
+| `list_starters` | List the starter layouts (blank, quotation, invoice, purchase, product) and the styles each comes in. |
+| `create_from_starter` | Create a template from a starter in a style: classic (shared header and footer), folder, wave, diagonal, sidebar or bigtotal. |
+
+**Design**
+
+| Tool | What it does |
+|---|---|
+| `get_capabilities` | Everything a layout can hold: kinds and keys with allowed values, gradients, free vector `path` slots, page background, theme, bundled fonts, limits, ready path recipes (folder tab, wave, chevron, hexagon, ...). |
+| `import_svg` | Turn an SVG (markup or a local file) into a `path` slot: paths with fills, gradients and strokes; text and images are listed as dropped. |
 
 **Header and footer parts**
 
@@ -246,8 +253,20 @@ What the agent does:
    partner address.
 4. `validate_layout(...)` and `get_values(template_id=id)` confirm that every
    expression prints what it should.
-5. `render_preview(template_id=id, output="png")` saves page 1 and returns
-   its path.
+5. `render_preview(template_id=id, output="png")` saves page 1, returns its
+   path and shows the image to the agent.
+
+> Make our invoice bold: a dark wave across the top in our brand blue, our
+> logo from logo.svg, the total set large.
+
+1. `get_capabilities()` shows the keys, gradients, fonts and path recipes.
+2. `create_from_starter("invoice", "Invoice (wave)", style="wave")`.
+3. `update_template(id, layout_set={"theme": {"primary": "#0b3d91", ...}})`
+   recolours every block that refers to the theme.
+4. `import_svg(path="logo.svg", w=120, h=40)`, then `update_template(id,
+   upsert_slots=[{"id": "logo", "kind": "path", ...}])`.
+5. `render_preview(template_id=id, output="png")`: the agent looks at the
+   page and adjusts until it reads well.
 
 > Translate it into German and French, and the quotation email too.
 
