@@ -267,6 +267,26 @@ async def test_import_svg_refuses_big_or_missing_files(tools, rec, tmp_path):
     assert rec.requests == []
 
 
+async def test_import_svg_reads_only_svg_files(tools, rec, tmp_path):
+    secret = tmp_path / "id_ed25519"
+    secret.write_text("-----BEGIN OPENSSH PRIVATE KEY-----")
+    with pytest.raises(ToolFailure, match=r"\.svg file"):
+        await tools.import_svg(path=str(secret))
+    disguised = tmp_path / "key.svg"
+    disguised.write_text("-----BEGIN OPENSSH PRIVATE KEY-----")
+    with pytest.raises(ToolFailure, match="does not look like an SVG"):
+        await tools.import_svg(path=str(disguised))
+    link = tmp_path / "link.svg"
+    link.symlink_to(secret)
+    with pytest.raises(ToolFailure):
+        await tools.import_svg(path=str(link))
+    folder = tmp_path / "dir.svg"
+    folder.mkdir()
+    with pytest.raises(ToolFailure, match="regular file"):
+        await tools.import_svg(path=str(folder))
+    assert rec.requests == []
+
+
 async def test_network_error(rec):
     def boom(request):
         raise httpx.ConnectError("down", request=request)
