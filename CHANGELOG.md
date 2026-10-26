@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `create_from_starter(style=...)`: the bold starter styles folder, wave, diagonal, sidebar and bigtotal.
 - `render_preview(output="png")` also returns the page as an image, so the agent can look at its design; `show=false` returns only the path.
 
+### Security
+
+- `import_svg(path=...)` reads only a regular file named `.svg` (after resolving links) whose content is SVG markup, so a prompt-injected path cannot upload keys or other private files.
+
 ### Changed
 
 - The server instructions describe the design workflow: capabilities, starter styles, theme, path slots, preview and iterate.

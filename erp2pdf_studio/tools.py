@@ -25,8 +25,10 @@ from .client import StudioAPIError, StudioClient
 # context (a long multi-page document is mostly repeated markup).
 MAX_INLINE_HTML = 200_000
 
-# import_svg reads at most this much from a local file (the API's limit).
+# import_svg reads at most this much from a local file (the API's limit),
+# and wants the <svg> root element within the first SVG_SNIFF_BYTES.
 MAX_SVG_BYTES = 1_000_000
+SVG_SNIFF_BYTES = 8192
 
 # Starter styles (GET /starters lists which ones each starter comes in).
 StarterStyle = Literal["classic", "folder", "wave", "diagonal", "sidebar", "bigtotal"]
@@ -97,6 +99,27 @@ def _write_file(path: Path, data: bytes) -> None:
         with contextlib.suppress(OSError):
             os.unlink(tmp)
         raise
+
+
+def _read_svg_file(path: str) -> bytes:
+    """A local .svg file's bytes. The file is sent to the API, so only a
+    regular file named .svg whose content is SVG markup is read: a
+    prompt-injected ``path`` cannot turn the tool into a way to upload
+    keys or other private files."""
+    p = Path(path).expanduser()
+    if p.suffix.lower() != ".svg":
+        raise ToolFailure("path must name an .svg file")
+    try:
+        real = p.resolve(strict=True)
+        if not real.is_file():
+            raise ToolFailure(f"{p} is not a regular file")
+        with real.open("rb") as f:
+            data = f.read(MAX_SVG_BYTES + 1)
+    except OSError as e:
+        raise ToolFailure(f"cannot read {p}: {e.strerror or e}") from e
+    if real.suffix.lower() != ".svg" or b"<svg" not in data[:SVG_SNIFF_BYTES].lower():
+        raise ToolFailure(f"{p} does not look like an SVG file; nothing was sent")
+    return data
 
 
 def _safe_name(name: str) -> str:
@@ -327,15 +350,7 @@ class StudioTools:
         Text, images, filters and masks are dropped and listed in warnings."""
         if (svg is None) == (path is None):
             raise ToolFailure("pass exactly one of svg or path")
-        if path is not None:
-            p = Path(path).expanduser()
-            try:
-                with p.open("rb") as f:
-                    data = f.read(MAX_SVG_BYTES + 1)
-            except OSError as e:
-                raise ToolFailure(f"cannot read {p}: {e.strerror or e}") from e
-        else:
-            data = svg.encode("utf-8")
+        data = _read_svg_file(path) if path is not None else svg.encode("utf-8")
         if len(data) > MAX_SVG_BYTES:
             raise ToolFailure("the SVG is larger than 1 MB")
         return await self._call(self.client.convert_svg(data, w=w, h=h))
