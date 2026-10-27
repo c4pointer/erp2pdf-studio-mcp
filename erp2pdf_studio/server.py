@@ -36,6 +36,11 @@ image/QR sources in `source`. Expressions: {{ name }}, {{ partner_id.name }},
 the document's timezone).
 No object literals. Tables are `repeater` slots bound to a one2many
 ($.order_line) whose row_template cells read line fields ({{ price_subtotal }}).
+A table the author types (terms, price tiers) is a `grid` slot: cells[row][col]
+are texts. A `chart` slot draws bar/hbar/line/pie/donut from a one2many
+(binding + labelField + valueField; equal labels add up) or from fixed points
+reading record fields. Blocks that belong together (a totals box) can share a
+`group` id named in layout.groups: Studio then moves and copies them as one.
 Translations (PDF and email templates): get_translations lists every static
 string per language -> set_translations({lang: {source: text}}), keeping each
 string's {{ expressions }}; fill_from_glossary covers common terms. Check with

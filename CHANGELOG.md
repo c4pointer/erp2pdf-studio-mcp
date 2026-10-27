@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-27
+
+### Changed
+
+- The server instructions describe the `grid` (a typed table) and `chart` (bar, line, pie, donut from the document's lines or fields) slots and sections (`group` + `layout.groups`), which `get_capabilities` now lists.
+
 ## [0.4.0] - 2026-10-26
 
 ### Added
@@ -106,7 +112,8 @@ Initial version (not published).
   `message` and, for an invalid layout, the `{path, code, message}` list.
 - Tests that mock the HTTP layer with `httpx.MockTransport`.
 
-[Unreleased]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/c4pointer/erp2pdf-studio-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.4.0
 [0.3.0]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.3.0
 [0.2.1]: https://github.com/c4pointer/erp2pdf-studio-mcp/releases/tag/v0.2.1
