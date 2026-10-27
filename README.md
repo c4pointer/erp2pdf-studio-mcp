@@ -79,7 +79,7 @@ erp2pdf-studio-mcp          # or: python -m erp2pdf_studio
 ```
 
 To pin a release, append its tag to the URL, for example
-`git+https://github.com/c4pointer/erp2pdf-studio-mcp@v0.4.0`.
+`git+https://github.com/c4pointer/erp2pdf-studio-mcp@v0.4.1`.
 
 Dependencies: [`mcp`](https://pypi.org/project/mcp/) 2.3.0 (the official MCP
 Python SDK) and [`httpx`](https://www.python-httpx.org/).
@@ -203,7 +203,7 @@ Previews carry a PREVIEW watermark and cost no credits.
 
 | Tool | What it does |
 |---|---|
-| `get_capabilities` | Everything a layout can hold: kinds and keys with allowed values, gradients, free vector `path` slots, page background, theme, bundled fonts, limits, ready path recipes (folder tab, wave, chevron, hexagon, ...). |
+| `get_capabilities` | Everything a layout can hold: kinds and keys with allowed values (tables of order lines, typed `grid` tables, `chart` blocks, sections of grouped blocks), gradients, free vector `path` slots, page background, theme, bundled fonts, limits, ready path recipes (folder tab, wave, chevron, hexagon, ...). |
 | `import_svg` | Turn an SVG (markup or a local file) into a `path` slot: paths with fills, gradients and strokes; text and images are listed as dropped. |
 
 **Header and footer parts**
